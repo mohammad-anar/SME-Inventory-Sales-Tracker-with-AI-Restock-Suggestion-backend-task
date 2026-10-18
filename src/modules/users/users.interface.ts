@@ -1,20 +1,35 @@
-import { UserRole, UserStatus } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 export type CreateUserPayload = {
-  firstName?: string;
-  lastName?: string;
+  name: string;
   email: string;
   password: string;
+  role?: Role;
   phone?: string;
-  profileImage?: string;
-  role?: UserRole;
+  avatar?: string;
 };
 
 export type UpdateUserPayload = {
-  firstName?: string;
-  lastName?: string;
+  name?: string;
+  email?: string;
+  role?: Role;
+  isActive?: boolean;
   phone?: string;
-  profileImage?: string;
-  role?: UserRole;
-  status?: UserStatus;
+  avatar?: string;
+};
+
+export type UpdatePasswordPayload = {
+  newPassword: string;
+};
+
+export type UpdateProfilePayload = {
+  name?: string;
+  phone?: string;
+  avatar?: string;
+};
+
+export type UserQueryOptions = {
+  page?: number;
+  limit?: number;
+  search?: string;
 };

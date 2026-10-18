@@ -1,34 +1,42 @@
 import bcrypt from "bcryptjs";
-import { UserRole, UserStatus } from "@prisma/client";
+import { Role } from "@prisma/client";
+import { StatusCodes } from "http-status-codes";
 import env from "../../config/env.js";
 import prisma from "../../config/prisma.js";
 import ApiError from "../../utils/ApiError.js";
-import { StatusCodes } from "http-status-codes";
-import { CreateUserPayload, UpdateUserPayload } from "./users.interface.js";
+import {
+  CreateUserPayload,
+  UpdatePasswordPayload,
+  UpdateProfilePayload,
+  UpdateUserPayload,
+  UserQueryOptions,
+} from "./users.interface.js";
 
-const userSelectedFields = {
+export const userSafeSelect = {
   id: true,
-  firstName: true,
-  lastName: true,
+  name: true,
   email: true,
-  phone: true,
-  profileImage: true,
   role: true,
-  status: true,
-  isVerified: true,
-  isDeleted: true,
-  needPasswordChange: true,
+  phone: true,
+  avatar: true,
+  isActive: true,
+  lastLoginAt: true,
   createdAt: true,
   updatedAt: true,
-};
+} as const;
 
 const createUser = async (payload: CreateUserPayload) => {
+  const normalizedEmail = payload.email.trim().toLowerCase();
+
   const existingUser = await prisma.user.findUnique({
-    where: { email: payload.email },
+    where: { email: normalizedEmail },
   });
 
   if (existingUser) {
-    throw new ApiError(StatusCodes.CONFLICT, "User with this email already exists");
+    throw new ApiError(
+      StatusCodes.CONFLICT,
+      "User with this email already exists",
+    );
   }
 
   const hashedPassword = await bcrypt.hash(
@@ -36,71 +44,177 @@ const createUser = async (payload: CreateUserPayload) => {
     env.bcrypt_salt_round || 10,
   );
 
-  const result = await prisma.user.create({
+  const newUser = await prisma.user.create({
     data: {
-      firstName: payload.firstName,
-      lastName: payload.lastName,
-      email: payload.email,
+      name: payload.name.trim(),
+      email: normalizedEmail,
       passwordHash: hashedPassword,
-      phone: payload.phone,
-      profileImage: payload.profileImage,
-      role: payload.role || UserRole.STUDENT,
-      status: UserStatus.ACTIVE,
+      role: payload.role || Role.STAFF,
+      phone: payload.phone || null,
+      avatar: payload.avatar || null,
+      isActive: true,
     },
-    select: userSelectedFields,
+    select: userSafeSelect,
   });
-  return result;
+
+  return newUser;
 };
 
-const getAllUsers = async () => {
-  const result = await prisma.user.findMany({
-    where: { isDeleted: false },
-    select: userSelectedFields,
-  });
-  return result;
+const getAllUsers = async (options: UserQueryOptions) => {
+  const page = Math.max(1, Number(options.page) || 1);
+  const limit = Math.max(1, Number(options.limit) || 10);
+  const skip = (page - 1) * limit;
+
+  const whereClause: any = {};
+
+  if (options.search && options.search.trim()) {
+    const search = options.search.trim();
+    whereClause.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  const [total, data] = await Promise.all([
+    prisma.user.count({ where: whereClause }),
+    prisma.user.findMany({
+      where: whereClause,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      select: userSafeSelect,
+    }),
+  ]);
+
+  return {
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    },
+    data,
+  };
 };
 
 const getUserById = async (id: string) => {
-  const result = await prisma.user.findUnique({
-    where: { id, isDeleted: false },
-    select: userSelectedFields,
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: userSafeSelect,
   });
-  if (!result) {
+
+  if (!user) {
     throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
   }
-  return result;
+
+  return user;
 };
 
 const updateUser = async (id: string, payload: UpdateUserPayload) => {
-  const user = await prisma.user.findUnique({
-    where: { id, isDeleted: false },
+  const targetUser = await prisma.user.findUnique({
+    where: { id },
   });
-  if (!user) {
+
+  if (!targetUser) {
     throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
   }
 
-  const result = await prisma.user.update({
+  // Prevent deactivation or demotion of the last active Admin
+  if (
+    targetUser.role === Role.ADMIN &&
+    (payload.isActive === false || payload.role === Role.STAFF)
+  ) {
+    const activeAdminCount = await prisma.user.count({
+      where: { role: Role.ADMIN, isActive: true },
+    });
+
+    if (activeAdminCount <= 1) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        "Cannot deactivate or demote the only remaining active Admin",
+      );
+    }
+  }
+
+  // Email duplicate check if email is being updated
+  if (payload.email) {
+    const normalizedEmail = payload.email.trim().toLowerCase();
+    const emailConflict = await prisma.user.findFirst({
+      where: {
+        email: normalizedEmail,
+        NOT: { id },
+      },
+    });
+
+    if (emailConflict) {
+      throw new ApiError(
+        StatusCodes.CONFLICT,
+        "User with this email already exists",
+      );
+    }
+    payload.email = normalizedEmail;
+  }
+
+  const updatedUser = await prisma.user.update({
     where: { id },
-    data: payload,
-    select: userSelectedFields,
+    data: {
+      ...(payload.name && { name: payload.name.trim() }),
+      ...(payload.email && { email: payload.email }),
+      ...(payload.role !== undefined && { role: payload.role }),
+      ...(payload.isActive !== undefined && { isActive: payload.isActive }),
+      ...(payload.phone !== undefined && { phone: payload.phone }),
+      ...(payload.avatar !== undefined && { avatar: payload.avatar }),
+    },
+    select: userSafeSelect,
   });
-  return result;
+
+  return updatedUser;
 };
 
-const deleteUser = async (id: string) => {
-  const user = await prisma.user.findUnique({
-    where: { id, isDeleted: false },
+const updateUserPassword = async (id: string, payload: UpdatePasswordPayload) => {
+  const targetUser = await prisma.user.findUnique({
+    where: { id },
   });
-  if (!user) {
+
+  if (!targetUser) {
     throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
   }
 
-  const result = await prisma.user.update({
+  const hashedPassword = await bcrypt.hash(
+    payload.newPassword,
+    env.bcrypt_salt_round || 10,
+  );
+
+  await prisma.user.update({
     where: { id },
-    data: { isDeleted: true },
-    select: userSelectedFields,
+    data: {
+      passwordHash: hashedPassword,
+    },
   });
-  return result;
+
+  return { message: "Password updated successfully" };
+};
+
+const updateProfile = async (userId: string, payload: UpdateProfilePayload) => {
+  const targetUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!targetUser) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(payload.name && { name: payload.name.trim() }),
+      ...(payload.phone !== undefined && { phone: payload.phone }),
+      ...(payload.avatar !== undefined && { avatar: payload.avatar }),
+    },
+    select: userSafeSelect,
+  });
+
+  return updatedUser;
 };
 
 export const UserServices = {
@@ -108,7 +222,8 @@ export const UserServices = {
   getAllUsers,
   getUserById,
   updateUser,
-  deleteUser,
+  updateUserPassword,
+  updateProfile,
 };
 
 export default UserServices;

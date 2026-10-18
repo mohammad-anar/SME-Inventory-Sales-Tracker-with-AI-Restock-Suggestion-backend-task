@@ -1,34 +1,25 @@
-import { UserRole } from "@prisma/client";
-
-export type IRegisterUser = {
-  firstName?: string;
-  lastName?: string;
-  email: string;
-  password: string;
-  phone?: string;
-  profileImage?: string;
-  role?: UserRole;
-};
+import { Role } from "@prisma/client";
 
 export type ILoginUser = {
   email: string;
   password: string;
 };
 
-export type IChangePassword = {
-  oldPassword: string;
-  newPassword: string;
-};
-
-export type IForgotPassword = {
+export type IAuthUser = {
+  id: string;
+  name: string;
   email: string;
+  role: Role;
+  phone: string | null;
+  avatar: string | null;
+  isActive: boolean;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
-export type IResetPassword = {
+export type ILoginResponse = {
   token: string;
-  newPassword: string;
+  user: IAuthUser;
 };
 
-export type IRefreshToken = {
-  refreshToken: string;
-};

@@ -1,19 +1,19 @@
 import bcrypt from "bcryptjs";
 import env from "../config/env.js";
 import prisma from "../config/prisma.js";
-import { UserRole, UserStatus } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 export const seedSuperAdmin = async () => {
   if (!env.admin.email || !env.admin.password) {
     return;
   }
 
-  console.log("Checking for Admin with email:", env.admin.email);
+  const normalizedEmail = env.admin.email.trim().toLowerCase();
+  console.log("Checking for Admin with email:", normalizedEmail);
 
   const isExist = await prisma.user.findFirst({
     where: {
-      email: env.admin.email,
-      role: UserRole.ADMIN,
+      email: normalizedEmail,
     },
   });
 
@@ -25,16 +25,13 @@ export const seedSuperAdmin = async () => {
 
     await prisma.user.create({
       data: {
-        firstName: env.admin.name || "Super",
-        lastName: "Admin",
-        email: env.admin.email,
-        phone: env.admin.phone,
+        name: env.admin.name || "Super Admin",
+        email: normalizedEmail,
+        phone: env.admin.phone || null,
         passwordHash: hashedPassword,
-        profileImage: env.admin.avatar,
-        role: UserRole.ADMIN,
-        isVerified: true,
-        needPasswordChange: false,
-        status: UserStatus.ACTIVE,
+        avatar: env.admin.avatar || null,
+        role: Role.ADMIN,
+        isActive: true,
       },
     });
     console.log("Super admin created successfully.");

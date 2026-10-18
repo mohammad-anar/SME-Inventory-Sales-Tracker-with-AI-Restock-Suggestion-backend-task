@@ -9,18 +9,19 @@ const createUser = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: StatusCodes.CREATED,
     success: true,
-    message: "User created successfully",
+    message: "Staff user created successfully",
     data: result,
   });
 });
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserServices.getAllUsers();
+  const result = await UserServices.getAllUsers(req.query);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
     message: "Users retrieved successfully",
-    data: result,
+    pagination: result.pagination,
+    data: result.data,
   });
 });
 
@@ -44,12 +45,32 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const deleteUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserServices.deleteUser(req.params.id);
+const updateUserPassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.updateUserPassword(req.params.id, req.body);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: "User deleted successfully",
+    message: result.message,
+    data: null,
+  });
+});
+
+const getProfile = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.getUserById(req.user.id);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Current profile retrieved successfully",
+    data: result,
+  });
+});
+
+const updateProfile = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.updateProfile(req.user.id, req.body);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Profile updated successfully",
     data: result,
   });
 });
@@ -59,7 +80,9 @@ export const UserController = {
   getAllUsers,
   getUserById,
   updateUser,
-  deleteUser,
+  updateUserPassword,
+  getProfile,
+  updateProfile,
 };
 
 export default UserController;

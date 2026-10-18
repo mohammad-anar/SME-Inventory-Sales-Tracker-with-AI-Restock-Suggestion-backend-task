@@ -1,24 +1,50 @@
 import { z } from "zod";
-import { UserRole, UserStatus } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 const createUserZodSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  email: z.string().email("Valid email is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  phone: z.string().optional(),
-  role: z.nativeEnum(UserRole).optional(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name cannot be empty"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Valid email is required"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long"),
+  role: z.enum([Role.ADMIN, Role.STAFF]).optional().default(Role.STAFF),
+  phone: z.string().trim().optional(),
+  avatar: z.string().url("Avatar must be a valid URL").optional().nullable(),
 });
 
 const updateUserZodSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  phone: z.string().optional(),
-  role: z.nativeEnum(UserRole).optional(),
-  status: z.nativeEnum(UserStatus).optional(),
+  name: z.string().trim().min(1, "Name cannot be empty").optional(),
+  email: z.string().trim().toLowerCase().email("Valid email is required").optional(),
+  role: z.enum([Role.ADMIN, Role.STAFF]).optional(),
+  isActive: z.boolean().optional(),
+  phone: z.string().trim().optional().nullable(),
+  avatar: z.string().url("Avatar must be a valid URL").optional().nullable(),
+});
+
+const updatePasswordZodSchema = z.object({
+  newPassword: z
+    .string()
+    .min(8, "New password must be at least 8 characters long"),
+});
+
+const updateProfileZodSchema = z.object({
+  name: z.string().trim().min(1, "Name cannot be empty").optional(),
+  phone: z.string().trim().optional().nullable(),
+  avatar: z.string().url("Avatar must be a valid URL").optional().nullable(),
 });
 
 export const UserValidation = {
   createUserZodSchema,
   updateUserZodSchema,
+  updatePasswordZodSchema,
+  updateProfileZodSchema,
 };
+
+export default UserValidation;
