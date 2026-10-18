@@ -1,11 +1,12 @@
 import bcrypt from "bcryptjs";
 import { Secret } from "jsonwebtoken";
 import { StatusCodes } from "http-status-codes";
+import { Role } from "@prisma/client";
 import env from "../../config/env.js";
 import prisma from "../../config/prisma.js";
 import ApiError from "../../utils/ApiError.js";
 import { jwtHelper } from "../../utils/jwt.js";
-import { ILoginResponse, ILoginUser } from "./auth.interface.js";
+import { ILoginResponse, ILoginUser, IRegisterUser } from "./auth.interface.js";
 
 export const userSafeSelect = {
   id: true,
@@ -80,6 +81,57 @@ const loginUser = async (payload: ILoginUser): Promise<ILoginResponse> => {
   };
 };
 
+const registerUser = async (
+  payload: IRegisterUser,
+): Promise<ILoginResponse> => {
+  const normalizedEmail = payload.email.trim().toLowerCase();
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (existingUser) {
+    throw new ApiError(
+      StatusCodes.CONFLICT,
+      "User with this email already exists",
+    );
+  }
+
+  const saltRounds = Number(env.bcrypt_salt_round) || 12;
+  const passwordHash = await bcrypt.hash(payload.password, saltRounds);
+
+  const newUser = await prisma.user.create({
+    data: {
+      name: payload.name.trim(),
+      email: normalizedEmail,
+      passwordHash,
+      role: Role.STAFF,
+      phone: payload.phone?.trim() ? payload.phone.trim() : null,
+      avatar: payload.avatar ? payload.avatar : null,
+      isActive: true,
+      lastLoginAt: new Date(),
+    },
+    select: userSafeSelect,
+  });
+
+  const jwtPayload = {
+    id: newUser.id,
+    email: newUser.email,
+    role: newUser.role,
+  };
+
+  const token = jwtHelper.createToken(
+    jwtPayload,
+    env.jwt.jwt_secret as Secret,
+    (env.jwt.jwt_expire_in || "1d") as any,
+  );
+
+  return {
+    token,
+    user: newUser,
+  };
+};
+
 const getMe = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -102,7 +154,9 @@ const getMe = async (userId: string) => {
 
 export const AuthService = {
   loginUser,
+  registerUser,
   getMe,
 };
 
 export default AuthService;
+
