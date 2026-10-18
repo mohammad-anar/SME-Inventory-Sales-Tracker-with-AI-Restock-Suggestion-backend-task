@@ -5,6 +5,8 @@ import { ProfileRoutes } from "./users/profile.route.js";
 import { CategoryRoutes } from "./categories/categories.route.js";
 import { SupplierRoutes } from "./suppliers/suppliers.route.js";
 import { ProductRoutes } from "./products/products.route.js";
+import { SaleRoutes } from "./sales/sales.route.js";
+import { SaleItemRoutes } from "./sale-items/sale-items.route.js";
 
 const router = express.Router();
 
@@ -15,6 +17,8 @@ const moduleRoutes = [
   { path: "/categories", route: CategoryRoutes },
   { path: "/suppliers", route: SupplierRoutes },
   { path: "/products", route: ProductRoutes },
+  { path: "/sales", route: SaleRoutes },
+  { path: "/sale-items", route: SaleItemRoutes },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
