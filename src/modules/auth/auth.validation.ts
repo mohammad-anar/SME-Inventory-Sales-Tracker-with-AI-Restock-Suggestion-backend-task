@@ -11,8 +11,17 @@ const loginZodSchema = z.object({
     .min(1, "Password is required"),
 });
 
+const registerZodSchema = z.object({
+  name: z.string().trim().min(1, "Name cannot be empty"),
+  email: z.string().trim().toLowerCase().email("Valid email is required"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+  phone: z.string().trim().optional(),
+  avatar: z.string().url("Avatar must be a valid URL").optional().nullable(),
+});
+
 export const AuthValidation = {
   loginZodSchema,
+  registerZodSchema,
 };
 
 export default AuthValidation;
