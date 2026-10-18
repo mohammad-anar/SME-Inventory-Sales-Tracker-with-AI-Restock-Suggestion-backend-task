@@ -8,6 +8,7 @@ import { ProductRoutes } from "./products/products.route.js";
 import { SaleRoutes } from "./sales/sales.route.js";
 import { SaleItemRoutes } from "./sale-items/sale-items.route.js";
 import { PurchaseOrderRoutes } from "./purchase-orders/purchase-orders.route.js";
+import { StaffRoutes } from "./staff/staff.route.js";
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ const moduleRoutes = [
   { path: "/auth", route: AuthRoutes },
   { path: "/users", route: UserRoutes },
   { path: "/profile", route: ProfileRoutes },
+  { path: "/staff", route: StaffRoutes },
   { path: "/categories", route: CategoryRoutes },
   { path: "/suppliers", route: SupplierRoutes },
   { path: "/products", route: ProductRoutes },
