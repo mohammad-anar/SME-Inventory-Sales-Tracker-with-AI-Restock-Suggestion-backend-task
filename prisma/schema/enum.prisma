@@ -1,8 +1,6 @@
-enum UserRole {
+enum Role {
     ADMIN
-    INSTRUCTOR
-    STUDENT
-    SUPPORT
+    STAFF
 }
 
 enum UserStatus {
@@ -10,4 +8,30 @@ enum UserStatus {
     INACTIVE
     SUSPENDED
     BANNED
+}
+
+enum PaymentMethod {
+    CASH
+    CARD
+    MOBILE_BANKING
+}
+
+enum PurchaseOrderStatus {
+    DRAFT
+    ORDERED
+    RECEIVED
+    CANCELLED
+}
+
+enum SaleStatus {
+    COMPLETED
+    VOIDED
+}
+
+enum StockMovementType {
+    SALE
+    PURCHASE
+    ADJUSTMENT
+    RETURN
+    REVERSAL
 }

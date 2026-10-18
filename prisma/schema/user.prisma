@@ -3,12 +3,13 @@ model User {
     firstName          String?
     lastName           String?
     email              String     @unique
-    phone              String?
     passwordHash       String
-    profileImage       String?
-    role               UserRole   @default(STUDENT)
+    role               UserRoleRole   @default(STAFF)
+    phone              String?
+    avatar             String?
     isVerified         Boolean    @default(false)
     isDeleted          Boolean    @default(false)
+    lastLoginAt        DateTime?
     needPasswordChange Boolean    @default(true)
     status             UserStatus @default(ACTIVE)
     createdAt          DateTime   @default(now())
@@ -16,6 +17,5 @@ model User {
 
     @@map("users")
     @@index([email])
-    @@index([phone])
     @@index([role])
 }
