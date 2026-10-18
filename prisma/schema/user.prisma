@@ -10,7 +10,6 @@ model User {
     isVerified         Boolean    @default(false)
     isDeleted          Boolean    @default(false)
     lastLoginAt        DateTime?
-    needPasswordChange Boolean    @default(true)
     status             UserStatus @default(ACTIVE)
     createdAt          DateTime   @default(now())
     updatedAt          DateTime   @updatedAt
@@ -18,4 +17,173 @@ model User {
     @@map("users")
     @@index([email])
     @@index([role])
+}
+
+
+model Category {
+    id          String     @id @default(cuid())
+    name        String
+    description String
+    isDeleted   Boolean    @default(false)
+    isActive   Boolean    @default(false)
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+    @@map("categories")
+    @@index([name])
+}
+
+model Supplier {
+    id          String     @id @default(cuid())
+    name        String
+    email       String     @unique
+    phone       String?
+    address     String?
+    isActive    Boolean    @default(true)
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+    @@map("suppliers")
+    @@index([email])
+}
+
+
+model Product {
+    id            String     @id @default(cuid())
+    sku           String     @unique
+    name          String
+    description   String?   @default("")
+    barcode       String?   @default("")
+
+    categoryId    String
+    category      Category   @relation(fields: [categoryId], references: [id])
+    supplierId    String
+    supplier      Supplier   @relation(fields: [supplierId], references: [id])
+
+    avatar        String?
+    unitPrice     Decimal    @default(0)
+    costPrice     Decimal    @default(0)
+    stockQty      Int        @default(0)
+    reorderLevel  Int        @default(10)
+    isActive      Boolean    @default(false)
+    createdAt     DateTime   @default(now())
+    updatedAt     DateTime   @updatedAt
+
+    @@map("products")
+    @@index([sku])
+    @@index([name])
+}
+
+model Sale {
+    id                 String     @id @default(cuid())
+    invoiceNo	       String     @unique
+
+    staffId	           String
+    staff              User       @relation(fields: [staffId], references: [id])
+
+    customerName	   String?
+
+    subtotal	       Decimal    @default(0)
+    discount	       Decimal    @default(0)
+    totalAmount	       Decimal    @default(0)
+    
+    paymentMethod	   PaymentMethod  @default(CASH)
+    status	           SaleStatus     @default(COMPLETED)    
+    createdAt          DateTime   @default(now())
+    updatedAt          DateTime   @updatedAt
+
+    @@map("sales")
+    @@index([invoiceNo])
+}
+
+model SaleItem {
+    id                 String     @id @default(cuid())
+    
+    saleId	           String
+    sale               Sale       @relation(fields: [saleId], references: [id])
+    
+    productId          String
+    product	           Product    @relation(fields: [productId], references: [id])
+
+    quantity	       Int
+    unitPrice	       Decimal    @default(0)
+    unitCost	       Decimal    @default(0)
+    lineTotal	       Decimal    @default(0)
+    
+    createdAt          DateTime   @default(now())
+    updatedAt          DateTime   @updatedAt
+
+    @@map("sale_items")
+    @@index([saleId])
+    @@index([productId])
+    @unique([saleId, productId])
+}
+
+model PurchaseOrder {
+    id                 String     @id @default(cuid())
+    poNumber	       String     @unique
+
+    supplierId	       String
+    supplier           Supplier   @relation(fields: [supplierId], references: [id])
+
+    createdById	       String
+    createdBy          User       @relation(fields: [createdById], references: [id])
+    
+    status	           PurchaseOrderStatus @default(DRAFT)
+    note	           String    @default("")
+    totalCost	       Decimal   @default(0)
+    orderedAt	       DateTime? @default(now())
+    receivedAt	       DateTime?
+    createdAt          DateTime   @default(now())
+    updatedAt          DateTime   @updatedAt
+
+    @@map("purchase_orders")
+    @@index([email])
+    @@index([role])
+}
+
+model PurchaseOrderItem {
+    id                 String     @id @default(cuid())
+    purchaseOrderId	   String
+    purchaseOrder      PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+    productId	        String
+    product             Product    @relation(fields: [productId], references: [id])
+    
+    quantity	        Int
+    unitCost	        Decimal
+    
+    createdAt          DateTime   @default(now())
+    updatedAt          DateTime   @updatedAt
+
+    @@map("purchase_order_items")
+    @@index([purchaseOrderId])
+    @@index([productId])
+    @unique([purchaseOrderId, productId])
+}
+
+model StockMovement {
+    id                 String     @id @default(cuid())
+
+    productId	        String
+    product             Product    @relation(fields: [productId], references: [id])
+    
+    type	            StockMovementType
+    quantityChange	    Int
+    
+    saleItemId	        String?
+    saleItem            SaleItem?  @relation(fields: [saleItemId], references: [id])
+    
+    purchaseOrderItemId	String?
+    purchaseOrderItem   PurchaseOrderItem?  @relation(fields: [purchaseOrderItemId], references: [id])
+
+    note	            String    @default("")
+
+    createdById	        String
+    createdBy           User      @relation(fields: [createdById], references: [id])
+
+    createdAt           DateTime  @default(now())
+    updatedAt           DateTime  @updatedAt
+
+    @@map("stock_movements")
+    @@index([productId])
+    @@index([type])
 }
