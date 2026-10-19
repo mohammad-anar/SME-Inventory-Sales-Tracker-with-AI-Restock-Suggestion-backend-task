@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import catchAsync from "../../utils/catchAsync.js";
 import sendResponse from "../../utils/sendResponse.js";
+import ApiError from "../../utils/ApiError.js";
 import { AuthService } from "./auth.service.js";
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
@@ -26,10 +28,43 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
 });
 
 const logoutUser = catchAsync(async (req: Request, res: Response) => {
+  const tokenWithBearer = req.headers.authorization;
+  if (!tokenWithBearer || !tokenWithBearer.startsWith("Bearer ")) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, "Authentication required");
+  }
+
+  const token = tokenWithBearer.split(" ")[1];
+  if (!token) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, "Authentication required");
+  }
+
+  const decoded = jwt.decode(token) as JwtPayload | null;
+  if (!decoded || typeof decoded !== "object" || !decoded.exp) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, "Authentication required");
+  }
+
+  const result = await AuthService.logoutUser(
+    token,
+    decoded.id as string | undefined,
+  );
+
+  if (req.cookies?.token || req.cookies?.accessToken) {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
+  }
+
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: "User logged out successfully",
+    message: result.message || "User logged out successfully",
     data: null,
   });
 });
