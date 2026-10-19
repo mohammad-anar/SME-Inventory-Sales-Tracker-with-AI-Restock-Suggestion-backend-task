@@ -57,6 +57,29 @@ async function runAudit() {
     });
     record("Auth", "GET /auth/me", authMeRes.status === 200 ? "PASS" : "FAIL", `Status: ${authMeRes.status}`);
 
+    const invalidLoginRes = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "invalid@example.com", password: "wrongpassword123" }),
+    });
+    record("Auth", "POST /auth/login (Invalid credentials rejected)", invalidLoginRes.status === 401 ? "PASS" : "FAIL", `Status: ${invalidLoginRes.status}`);
+
+    const disposableToken = jwt.sign(
+      { id: admin.id, role: admin.role, email: admin.email },
+      JWT_SECRET,
+      { expiresIn: "5m" }
+    );
+    const logoutRes = await fetch(`${API_URL}/auth/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${disposableToken}` },
+    });
+    record("Auth", "POST /auth/logout (Revoke token)", logoutRes.status === 200 ? "PASS" : "FAIL", `Status: ${logoutRes.status}`);
+
+    const revokedAccessRes = await fetch(`${API_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${disposableToken}` },
+    });
+    record("Auth", "GET /auth/me (Revoked token rejected)", revokedAccessRes.status === 401 ? "PASS" : "FAIL", `Status: ${revokedAccessRes.status}`);
+
     const staffMeRes = await fetch(`${API_URL}/staff/me`, {
       headers: { Authorization: `Bearer ${staffToken}` },
     });
