@@ -10,14 +10,12 @@ const router = express.Router();
 router.get(
   "/recommendations",
   auth(Role.ADMIN, Role.STAFF),
-  validateRequest(AiRestockValidation.getRecommendationsQueryZodSchema),
   AiRestockController.getRestockRecommendations,
 );
 
 router.get(
   "/products/:id",
   auth(Role.ADMIN, Role.STAFF),
-  validateRequest(AiRestockValidation.getProductForecastQueryZodSchema),
   AiRestockController.getProductForecast,
 );
 
