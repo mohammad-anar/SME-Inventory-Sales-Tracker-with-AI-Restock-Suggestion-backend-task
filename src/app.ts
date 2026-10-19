@@ -3,6 +3,8 @@ import express, { Application, Request, Response } from "express";
 import env from "./config/env.js";
 import routes from "./modules/routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger.js";
 
 const app: Application = express();
 const corsOrigins = env.cors_origin || "*";
@@ -24,6 +26,19 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static uploads
 app.use(express.static("uploads"));
+
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: "StockPilot API Documentation",
+  }),
+);
+
+app.get("/api-docs.json", (req: Request, res: Response) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
 
 // API Router
 app.use("/api/v1", routes);
