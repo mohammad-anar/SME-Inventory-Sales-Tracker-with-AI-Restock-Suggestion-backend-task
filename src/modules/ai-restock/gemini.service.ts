@@ -63,10 +63,7 @@ Candidate inventory data:
 ${JSON.stringify(candidates.slice(0, 30), null, 2)}
 `;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
-
-    const response = await ai.models.generateContent({
+    const generatePromise = ai.models.generateContent({
       model: getModelName(),
       contents: prompt,
       config: {
@@ -75,7 +72,11 @@ ${JSON.stringify(candidates.slice(0, 30), null, 2)}
       },
     });
 
-    clearTimeout(timeoutId);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Gemini API timeout after 7s")), 7000),
+    );
+
+    const response = await Promise.race([generatePromise, timeoutPromise]);
 
     const rawText = response.text;
     if (!rawText) {
