@@ -8,6 +8,8 @@ model User {
     avatar          String?
     isActive        Boolean         @default(true)
     lastLoginAt     DateTime?
+    setupTokenHash  String?
+    setupTokenExpiresAt DateTime?
     createdAt       DateTime        @default(now())
     updatedAt       DateTime        @updatedAt
 
@@ -18,6 +20,7 @@ model User {
     @@map("users")
     @@index([email])
     @@index([role])
+    @@index([setupTokenHash])
 }
 
 model Category {
