@@ -19,6 +19,17 @@ router.post(
 );
 
 router.get(
+  "/verify-setup-token",
+  AuthController.verifySetupToken,
+);
+
+router.post(
+  "/set-password",
+  validateRequest(AuthValidation.setPasswordZodSchema),
+  AuthController.setPassword,
+);
+
+router.get(
   "/me",
   auth(),
   AuthController.getMe,
