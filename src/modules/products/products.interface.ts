@@ -9,6 +9,7 @@ export type CreateProductPayload = {
   unitPrice: number | string;
   costPrice: number | string;
   reorderLevel?: number;
+  stockQty?: number | string;
 };
 
 export type UpdateProductPayload = {
