@@ -37,7 +37,6 @@ router.get(
 
 router.post(
   "/logout",
-  auth(),
   AuthController.logoutUser,
 );
 
