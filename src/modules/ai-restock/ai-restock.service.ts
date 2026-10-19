@@ -195,8 +195,8 @@ const calculateDeterministicRestock = (
 };
 
 const getRestockRecommendations = async (params: IGetRecommendationsParams) => {
-  const planningHorizonDays = params.planningHorizonDays || 7;
-  const analysisPeriodDays = params.analysisPeriodDays || 30;
+  const planningHorizonDays = Number(params.planningHorizonDays) || 7;
+  const analysisPeriodDays = Number(params.analysisPeriodDays) || 30;
   const cacheKey = `${analysisPeriodDays}_${planningHorizonDays}`;
 
   const cached = memoryCache.get(cacheKey);
