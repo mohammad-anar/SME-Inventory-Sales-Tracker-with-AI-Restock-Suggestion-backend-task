@@ -44,11 +44,34 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const verifySetupToken = catchAsync(async (req: Request, res: Response) => {
+  const token = (req.query.token as string) || req.body?.token;
+  const result = await AuthService.verifySetupToken(token);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Setup token verified successfully",
+    data: result,
+  });
+});
+
+const setPassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.setPassword(req.body);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Password set successfully and logged in",
+    data: result,
+  });
+});
+
 export const AuthController = {
   loginUser,
   registerUser,
   getMe,
   logoutUser,
+  verifySetupToken,
+  setPassword,
 };
 
 export default AuthController;
