@@ -138,6 +138,14 @@ const createProduct = async (payload: CreateProductPayload) => {
     reorderLevel = parsedReorderLevel;
   }
 
+  let stockQty = 0;
+  if (payload.stockQty !== undefined) {
+    const parsedStockQty = Number(payload.stockQty);
+    if (!isNaN(parsedStockQty) && Number.isInteger(parsedStockQty) && parsedStockQty >= 0) {
+      stockQty = parsedStockQty;
+    }
+  }
+
   const result = await prisma.product.create({
     data: {
       sku,
@@ -149,7 +157,7 @@ const createProduct = async (payload: CreateProductPayload) => {
       avatar,
       unitPrice: new Prisma.Decimal(String(payload.unitPrice)),
       costPrice: new Prisma.Decimal(String(payload.costPrice)),
-      stockQty: 0,
+      stockQty,
       reorderLevel,
       isActive: true,
     },
