@@ -13,6 +13,7 @@ import {
   ISetPasswordPayload,
   IVerifySetupTokenResponse,
 } from "./auth.interface.js";
+import { TokenBlacklistService } from "./tokenBlacklist.service.js";
 
 export const userSafeSelect = {
   id: true,
@@ -225,12 +226,17 @@ const getMe = async (userId: string) => {
   return user;
 };
 
+const logoutUser = async (token: string, userId?: string) => {
+  return await TokenBlacklistService.blacklistToken(token, userId);
+};
+
 export const AuthService = {
   loginUser,
   registerUser,
   verifySetupToken,
   setPassword,
   getMe,
+  logoutUser,
 };
 
 export default AuthService;
