@@ -1,149 +1,149 @@
 model User {
-    id              String          @id @default(cuid())
-    name            String
-    email           String          @unique
-    passwordHash    String
-    role            Role            @default(STAFF)
-    phone           String?
-    avatar          String?
-    isActive        Boolean         @default(true)
-    lastLoginAt     DateTime?
-    setupTokenHash  String?
+    id                  String    @id @default(cuid())
+    name                String
+    email               String    @unique
+    passwordHash        String
+    role                Role      @default(STAFF)
+    phone               String?
+    avatar              String?
+    isActive            Boolean   @default(true)
+    lastLoginAt         DateTime?
+    setupTokenHash      String?
     setupTokenExpiresAt DateTime?
-    createdAt       DateTime        @default(now())
-    updatedAt       DateTime        @updatedAt
+    createdAt           DateTime  @default(now())
+    updatedAt           DateTime  @updatedAt
 
-    sales           Sale[]          @relation("StaffSales")
-    purchaseOrders  PurchaseOrder[] @relation("UserPurchaseOrders")
-    stockMovements  StockMovement[] @relation("UserStockMovements")
+    sales             Sale[]             @relation("StaffSales")
+    purchaseOrders    PurchaseOrder[]    @relation("UserPurchaseOrders")
+    stockMovements    StockMovement[]    @relation("UserStockMovements")
     blacklistedTokens BlacklistedToken[] @relation("UserBlacklistedTokens")
 
-    @@map("users")
     @@index([email])
     @@index([role])
     @@index([setupTokenHash])
+    @@map("users")
 }
 
 model BlacklistedToken {
-    id          String    @id @default(cuid())
-    tokenHash   String    @unique
-    userId      String?
-    user        User?     @relation("UserBlacklistedTokens", fields: [userId], references: [id], onDelete: Cascade)
-    expiresAt   DateTime
-    revokedAt   DateTime  @default(now())
-    createdAt   DateTime  @default(now())
+    id        String   @id @default(cuid())
+    tokenHash String   @unique
+    userId    String?
+    user      User?    @relation("UserBlacklistedTokens", fields: [userId], references: [id], onDelete: Cascade)
+    expiresAt DateTime
+    revokedAt DateTime @default(now())
+    createdAt DateTime @default(now())
 
-    @@map("blacklisted_tokens")
     @@index([tokenHash])
     @@index([expiresAt])
     @@index([userId])
+    @@map("blacklisted_tokens")
 }
 
 model Category {
-    id          String     @id @default(cuid())
-    name        String     @unique
-    description String?    @default("")
-    isActive    Boolean    @default(true)
-    isDeleted   Boolean    @default(false)
-    createdAt   DateTime   @default(now())
-    updatedAt   DateTime   @updatedAt
+    id          String   @id @default(cuid())
+    name        String   @unique
+    description String?  @default("")
+    isActive    Boolean  @default(true)
+    isDeleted   Boolean  @default(false)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
 
-    products    Product[]
+    products Product[]
 
-    @@map("categories")
     @@index([name])
+    @@map("categories")
 }
 
 model Supplier {
-    id             String          @id @default(cuid())
-    name           String
-    email          String?
-    phone          String?
-    address        String?
-    isActive       Boolean         @default(true)
-    createdAt      DateTime        @default(now())
-    updatedAt      DateTime        @updatedAt
+    id        String   @id @default(cuid())
+    name      String
+    email     String?
+    phone     String?
+    address   String?
+    isActive  Boolean  @default(true)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
     products       Product[]
     purchaseOrders PurchaseOrder[]
 
-    @@map("suppliers")
     @@index([name])
+    @@map("suppliers")
 }
 
 model Product {
-    id                 String              @id @default(cuid())
-    sku                String              @unique
-    name               String
-    description        String?             @default("")
-    barcode            String?             @default("")
+    id          String  @id @default(cuid())
+    sku         String  @unique
+    name        String
+    description String? @default("")
+    barcode     String? @default("")
 
-    categoryId         String
-    category           Category            @relation(fields: [categoryId], references: [id])
-    supplierId         String
-    supplier           Supplier            @relation(fields: [supplierId], references: [id])
+    categoryId String
+    category   Category @relation(fields: [categoryId], references: [id])
+    supplierId String
+    supplier   Supplier @relation(fields: [supplierId], references: [id])
 
-    avatar             String?
-    unitPrice          Decimal             @default(0)
-    costPrice          Decimal             @default(0)
-    stockQty           Int                 @default(0)
-    reorderLevel       Int                 @default(10)
-    isActive           Boolean             @default(true)
-    createdAt          DateTime            @default(now())
-    updatedAt          DateTime            @updatedAt
+    avatar       String?
+    unitPrice    Decimal  @default(0)
+    costPrice    Decimal  @default(0)
+    stockQty     Int      @default(0)
+    reorderLevel Int      @default(10)
+    isActive     Boolean  @default(true)
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
 
     saleItems          SaleItem[]
     purchaseOrderItems PurchaseOrderItem[]
     stockMovements     StockMovement[]
 
-    @@map("products")
     @@index([sku])
     @@index([name])
     @@index([categoryId])
     @@index([supplierId])
+    @@map("products")
 }
 
 model Sale {
-    id            String        @id @default(cuid())
-    invoiceNo     String        @unique
+    id        String @id @default(cuid())
+    invoiceNo String @unique
 
-    staffId       String
-    staff         User          @relation("StaffSales", fields: [staffId], references: [id])
+    staffId String
+    staff   User   @relation("StaffSales", fields: [staffId], references: [id])
 
-    customerName  String?
+    customerName String?
 
-    subtotal      Decimal       @default(0)
-    discount      Decimal       @default(0)
-    totalAmount   Decimal       @default(0)
-    
+    subtotal    Decimal @default(0)
+    discount    Decimal @default(0)
+    totalAmount Decimal @default(0)
+
     paymentMethod PaymentMethod @default(CASH)
-    status        SaleStatus    @default(COMPLETED)    
+    status        SaleStatus    @default(COMPLETED)
     createdAt     DateTime      @default(now())
     updatedAt     DateTime      @updatedAt
 
-    items         SaleItem[]
+    items SaleItem[]
 
-    @@map("sales")
     @@index([invoiceNo])
     @@index([staffId])
+    @@map("sales")
 }
 
 model SaleItem {
-    id             String          @id @default(cuid())
-    
-    saleId         String
-    sale           Sale            @relation(fields: [saleId], references: [id], onDelete: Cascade)
-    
-    productId      String
-    product        Product         @relation(fields: [productId], references: [id])
+    id String @id @default(cuid())
 
-    quantity       Int
-    unitPrice      Decimal         @default(0)
-    unitCost       Decimal         @default(0)
-    lineTotal      Decimal         @default(0)
-    
-    createdAt      DateTime        @default(now())
-    updatedAt      DateTime        @updatedAt
+    saleId String
+    sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+    productId String
+    product   Product @relation(fields: [productId], references: [id])
+
+    quantity  Int
+    unitPrice Decimal @default(0)
+    unitCost  Decimal @default(0)
+    lineTotal Decimal @default(0)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
     stockMovements StockMovement[]
 
@@ -154,46 +154,46 @@ model SaleItem {
 }
 
 model PurchaseOrder {
-    id          String              @id @default(cuid())
-    poNumber    String              @unique
+    id       String @id @default(cuid())
+    poNumber String @unique
 
-    supplierId  String
-    supplier    Supplier            @relation(fields: [supplierId], references: [id])
+    supplierId String
+    supplier   Supplier @relation(fields: [supplierId], references: [id])
 
     createdById String
-    createdBy   User                @relation("UserPurchaseOrders", fields: [createdById], references: [id])
-    
-    status      PurchaseOrderStatus @default(DRAFT)
-    note        String?             @default("")
-    totalCost   Decimal             @default(0)
-    orderedAt   DateTime?           @default(now())
-    receivedAt  DateTime?
-    createdAt   DateTime            @default(now())
-    updatedAt   DateTime            @updatedAt
+    createdBy   User   @relation("UserPurchaseOrders", fields: [createdById], references: [id])
 
-    items       PurchaseOrderItem[]
+    status     PurchaseOrderStatus @default(DRAFT)
+    note       String?             @default("")
+    totalCost  Decimal             @default(0)
+    orderedAt  DateTime?           @default(now())
+    receivedAt DateTime?
+    createdAt  DateTime            @default(now())
+    updatedAt  DateTime            @updatedAt
 
-    @@map("purchase_orders")
+    items PurchaseOrderItem[]
+
     @@index([poNumber])
     @@index([supplierId])
     @@index([createdById])
+    @@map("purchase_orders")
 }
 
 model PurchaseOrderItem {
-    id              String          @id @default(cuid())
+    id              String        @id @default(cuid())
     purchaseOrderId String
-    purchaseOrder   PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+    purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
-    productId       String
-    product         Product         @relation(fields: [productId], references: [id])
-    
-    quantity        Int
-    unitCost        Decimal         @default(0)
-    
-    createdAt       DateTime        @default(now())
-    updatedAt       DateTime        @updatedAt
+    productId String
+    product   Product @relation(fields: [productId], references: [id])
 
-    stockMovements  StockMovement[]
+    quantity Int
+    unitCost Decimal @default(0)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    stockMovements StockMovement[]
 
     @@unique([purchaseOrderId, productId])
     @@index([purchaseOrderId])
@@ -202,30 +202,30 @@ model PurchaseOrderItem {
 }
 
 model StockMovement {
-    id                  String             @id @default(cuid())
+    id String @id @default(cuid())
 
-    productId           String
-    product             Product            @relation(fields: [productId], references: [id])
-    
-    type                StockMovementType
-    quantityChange      Int
-    
-    saleItemId          String?
-    saleItem            SaleItem?          @relation(fields: [saleItemId], references: [id])
-    
+    productId String
+    product   Product @relation(fields: [productId], references: [id])
+
+    type           StockMovementType
+    quantityChange Int
+
+    saleItemId String?
+    saleItem   SaleItem? @relation(fields: [saleItemId], references: [id])
+
     purchaseOrderItemId String?
     purchaseOrderItem   PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
 
-    note                String?            @default("")
+    note String? @default("")
 
-    createdById         String
-    createdBy           User               @relation("UserStockMovements", fields: [createdById], references: [id])
+    createdById String
+    createdBy   User   @relation("UserStockMovements", fields: [createdById], references: [id])
 
-    createdAt           DateTime           @default(now())
-    updatedAt           DateTime           @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-    @@map("stock_movements")
     @@index([productId])
     @@index([type])
     @@index([createdById])
+    @@map("stock_movements")
 }
