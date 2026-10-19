@@ -10,6 +10,9 @@ import { SaleItemRoutes } from "./sale-items/sale-items.route.js";
 import { PurchaseOrderRoutes } from "./purchase-orders/purchase-orders.route.js";
 import { StaffRoutes } from "./staff/staff.route.js";
 import { AiRestockRoutes } from "./ai-restock/ai-restock.route.js";
+import { StockMovementRoutes } from "./stock-movements/stock-movements.route.js";
+import { DashboardRoutes } from "./dashboard/dashboard.route.js";
+import { ReportRoutes } from "./reports/reports.route.js";
 
 const router = express.Router();
 
@@ -25,6 +28,9 @@ const moduleRoutes = [
   { path: "/sale-items", route: SaleItemRoutes },
   { path: "/purchase-orders", route: PurchaseOrderRoutes },
   { path: "/ai-restock", route: AiRestockRoutes },
+  { path: "/stock-movements", route: StockMovementRoutes },
+  { path: "/dashboard", route: DashboardRoutes },
+  { path: "/reports", route: ReportRoutes },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
