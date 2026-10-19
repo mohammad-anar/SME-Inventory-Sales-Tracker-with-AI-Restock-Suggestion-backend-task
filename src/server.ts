@@ -3,8 +3,10 @@ import env from "./config/env.js";
 import { initSocket } from "./config/socket.js";
 import { connectRedis } from "./config/redis.js";
 import { seedSuperAdmin } from "./utils/seedSuperAdmin.js";
+import { TokenBlacklistService } from "./modules/auth/tokenBlacklist.service.js";
 
 let server: any;
+let cleanupInterval: NodeJS.Timeout | null = null;
 
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception detected. Shutting down...");
@@ -14,18 +16,23 @@ process.on("uncaughtException", (error) => {
 
 async function bootstrap() {
   try {
-    // Seed default super admin
     await seedSuperAdmin();
-
-    // Connect to Redis
     await connectRedis();
 
-    // Start HTTP server
+    await TokenBlacklistService.cleanupExpiredTokens();
+    cleanupInterval = setInterval(async () => {
+      try {
+        await TokenBlacklistService.cleanupExpiredTokens();
+      } catch (err) {
+        console.error("Error during token blacklist cleanup:", err);
+      }
+    }, 6 * 60 * 60 * 1000);
+    cleanupInterval.unref();
+
     server = app.listen(env.port, () => {
       console.log(`🚀 Server running on http://localhost:${env.port}`);
     });
 
-    // Initialize Socket.io
     initSocket(server);
   } catch (error) {
     console.error("Error during server startup:", error);
@@ -36,6 +43,10 @@ async function bootstrap() {
 process.on("unhandledRejection", (error) => {
   console.error("Unhandled Rejection detected. Shutting down...");
   console.error(error);
+
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+  }
 
   if (server) {
     server.close(() => {
@@ -48,6 +59,9 @@ process.on("unhandledRejection", (error) => {
 
 process.on("SIGTERM", () => {
   console.log("SIGTERM received.");
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+  }
   if (server) {
     server.close(() => {
       process.exit(0);
@@ -57,6 +71,9 @@ process.on("SIGTERM", () => {
 
 process.on("SIGINT", () => {
   console.log("SIGINT received.");
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+  }
   if (server) {
     server.close(() => {
       process.exit(0);
