@@ -12,10 +12,10 @@ const corsOrigins = env.cors_origin || "*";
 app.use(
   cors({
     origin: corsOrigins.includes(",")
-      ? corsOrigins.split(",").map((origin) => origin.trim())
+      ? corsOrigins.split(",").map((origin) => origin.trim().replace(/\/+$/, ""))
       : corsOrigins === "*"
       ? "*"
-      : [corsOrigins],
+      : [corsOrigins.trim().replace(/\/+$/, "")],
     credentials: true,
   }),
 );
