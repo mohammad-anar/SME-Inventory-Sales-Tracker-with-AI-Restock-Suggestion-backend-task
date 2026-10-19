@@ -8,6 +8,38 @@ import { UserValidation } from "./users.validation.js";
 const router = express.Router();
 
 router.post(
+  "/staff",
+  auth(Role.ADMIN),
+  validateRequest(UserValidation.createStaffZodSchema),
+  UserController.createStaffAccount,
+);
+
+router.post(
+  "/:id/setup-token",
+  auth(Role.ADMIN),
+  UserController.generateSetupToken,
+);
+
+router.patch(
+  "/:id/status",
+  auth(Role.ADMIN),
+  validateRequest(UserValidation.updateUserStatusZodSchema),
+  UserController.updateUserStatus,
+);
+
+router.get(
+  "/:id/sales",
+  auth(Role.ADMIN),
+  UserController.getStaffSales,
+);
+
+router.get(
+  "/:id/activities",
+  auth(Role.ADMIN),
+  UserController.getStaffActivities,
+);
+
+router.post(
   "/",
   auth(Role.ADMIN),
   validateRequest(UserValidation.createUserZodSchema),
