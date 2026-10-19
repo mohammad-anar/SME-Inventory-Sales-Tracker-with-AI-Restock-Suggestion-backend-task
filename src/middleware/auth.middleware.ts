@@ -6,6 +6,7 @@ import env from "../config/env.js";
 import prisma from "../config/prisma.js";
 import ApiError from "../utils/ApiError.js";
 import { jwtHelper } from "../utils/jwt.js";
+import { TokenBlacklistService } from "../modules/auth/tokenBlacklist.service.js";
 
 export const auth =
   (...roles: Role[]) =>
@@ -13,32 +14,43 @@ export const auth =
     try {
       const tokenWithBearer = req.headers.authorization;
       if (!tokenWithBearer) {
-        throw new ApiError(StatusCodes.UNAUTHORIZED, "You are not authorized");
+        throw new ApiError(StatusCodes.UNAUTHORIZED, "Authentication required");
       }
 
       if (!tokenWithBearer.startsWith("Bearer ")) {
         throw new ApiError(
-          StatusCodes.BAD_REQUEST,
-          "Invalid token format! Token must start with Bearer",
+          StatusCodes.UNAUTHORIZED,
+          "Authentication required",
         );
       }
 
       const token = tokenWithBearer.split(" ")[1];
+      if (!token) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, "Authentication required");
+      }
 
-      // verify token
-      const verifyUser = jwtHelper.verifyToken(
-        token,
-        env.jwt.jwt_secret as Secret,
-      ) as { id: string; email: string; role: Role };
+      const isBlacklisted = await TokenBlacklistService.isTokenBlacklisted(token);
+      if (isBlacklisted) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, "Authentication required");
+      }
 
-      // check if user still exists and is active
+      let verifyUser: { id: string; email: string; role: Role };
+      try {
+        verifyUser = jwtHelper.verifyToken(
+          token,
+          env.jwt.jwt_secret as Secret,
+        ) as { id: string; email: string; role: Role };
+      } catch {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, "Authentication required");
+      }
+
       const user = await prisma.user.findUnique({
         where: { id: verifyUser.id },
         select: { id: true, email: true, role: true, isActive: true },
       });
 
       if (!user) {
-        throw new ApiError(StatusCodes.UNAUTHORIZED, "User does not exist");
+        throw new ApiError(StatusCodes.UNAUTHORIZED, "Authentication required");
       }
 
       if (!user.isActive) {
@@ -50,7 +62,6 @@ export const auth =
 
       req.user = user;
 
-      // role guard
       if (roles.length && !roles.includes(user.role)) {
         throw new ApiError(
           StatusCodes.FORBIDDEN,
