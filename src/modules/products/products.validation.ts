@@ -33,6 +33,12 @@ const createProductZodSchema = z.object({
   unitPrice: priceSchema,
   costPrice: priceSchema,
   reorderLevel: reorderLevelSchema.optional(),
+  stockQty: z
+    .union([
+      z.number().int("Stock quantity must be an integer").min(0, "Stock quantity cannot be negative"),
+      z.string().trim().regex(/^\d+$/, "Stock quantity must be a non-negative integer"),
+    ])
+    .optional(),
 });
 
 const updateProductZodSchema = z
