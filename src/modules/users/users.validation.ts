@@ -19,6 +19,20 @@ const createUserZodSchema = z.object({
   avatar: z.string().url("Avatar must be a valid URL").optional().nullable(),
 });
 
+const createStaffZodSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name cannot be empty"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Valid email is required"),
+  phone: z.string().trim().optional().nullable(),
+  avatar: z.string().url("Avatar must be a valid URL").optional().nullable(),
+});
+
 const updateUserZodSchema = z.object({
   name: z.string().trim().min(1, "Name cannot be empty").optional(),
   email: z.string().trim().toLowerCase().email("Valid email is required").optional(),
@@ -26,6 +40,10 @@ const updateUserZodSchema = z.object({
   isActive: z.boolean().optional(),
   phone: z.string().trim().optional().nullable(),
   avatar: z.string().url("Avatar must be a valid URL").optional().nullable(),
+});
+
+const updateUserStatusZodSchema = z.object({
+  isActive: z.boolean(),
 });
 
 const updatePasswordZodSchema = z.object({
@@ -42,7 +60,9 @@ const updateProfileZodSchema = z.object({
 
 export const UserValidation = {
   createUserZodSchema,
+  createStaffZodSchema,
   updateUserZodSchema,
+  updateUserStatusZodSchema,
   updatePasswordZodSchema,
   updateProfileZodSchema,
 };
