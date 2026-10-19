@@ -69,6 +69,9 @@ backend/
 │   │   ├── sales/                 # POS sales, transactions, invoices, voiding
 │   │   ├── sale-items/            # Line items management
 │   │   ├── purchase-orders/       # PO lifecycle, receiving intake, receipts
+│   │   ├── stock-movements/       # Audit ledger and manual adjustments
+│   │   ├── dashboard/             # Financial KPIs, sales trends, top products
+│   │   ├── reports/               # Inventory valuation, sales, and purchase reports
 │   │   └── ai-restock/            # Velocity math, Gemini AI client, restock logic
 │   ├── utils/
 │   │   ├── tokenHash.ts           # Cryptographic SHA-256 token hashing
@@ -79,6 +82,7 @@ backend/
 │   ├── app.ts                     # Express app configuration & middleware
 │   └── server.ts                  # HTTP server bootstrap & periodic cleanup job
 ├── tests/
+│   ├── complete_backend_audit.test.ts # Comprehensive 34-step end-to-end backend audit test
 │   └── jwt_blacklist_security.test.ts # Automated token blacklist security test suite
 ├── .env.example                   # Environment template
 ├── package.json                   # Dependencies & scripts
