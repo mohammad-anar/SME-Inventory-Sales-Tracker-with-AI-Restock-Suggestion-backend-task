@@ -287,7 +287,9 @@ const getRestockRecommendations = async (params: IGetRecommendationsParams) => {
         for (const rec of baseRecommendations) {
           const aiRec = geminiResults.get(rec.productId);
           if (aiRec) {
-            rec.priority = aiRec.priority;
+            if (rec.currentStock > 0 && rec.estimatedDaysRemaining > 3) {
+              rec.priority = aiRec.priority;
+            }
             rec.reason = aiRec.reason;
             if (aiRec.demandTrend) rec.demandTrend = aiRec.demandTrend;
             rec.confidence = aiRec.confidence;
@@ -434,7 +436,9 @@ const getProductForecast = async (
     const aiExplanation = await GeminiService.generateProductExplanation(candidateInput);
     if (aiExplanation) {
       aiStatus = "ONLINE";
-      recommendation.priority = aiExplanation.priority;
+      if (recommendation.currentStock > 0 && recommendation.estimatedDaysRemaining > 3) {
+        recommendation.priority = aiExplanation.priority;
+      }
       recommendation.reason = aiExplanation.reason;
       if (aiExplanation.demandTrend) recommendation.demandTrend = aiExplanation.demandTrend;
       recommendation.confidence = aiExplanation.confidence;
