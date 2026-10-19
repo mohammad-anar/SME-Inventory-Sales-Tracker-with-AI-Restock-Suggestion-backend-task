@@ -36,6 +36,10 @@ export const env = {
     password: process.env.PASSWORD || "admin123456",
     avatar: process.env.AVATAR || "",
   },
+  gemini: {
+    api_key: process.env.GEMINI_API_KEY || "",
+    model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  },
 };
 
 export default env;
