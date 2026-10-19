@@ -1,12 +1,18 @@
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { Secret } from "jsonwebtoken";
 import { StatusCodes } from "http-status-codes";
-import { Role } from "@prisma/client";
 import env from "../../config/env.js";
 import prisma from "../../config/prisma.js";
 import ApiError from "../../utils/ApiError.js";
 import { jwtHelper } from "../../utils/jwt.js";
-import { ILoginResponse, ILoginUser, IRegisterUser } from "./auth.interface.js";
+import {
+  ILoginResponse,
+  ILoginUser,
+  IRegisterUser,
+  ISetPasswordPayload,
+  IVerifySetupTokenResponse,
+} from "./auth.interface.js";
 
 export const userSafeSelect = {
   id: true,
@@ -28,7 +34,6 @@ const loginUser = async (payload: ILoginUser): Promise<ILoginResponse> => {
     where: { email: normalizedEmail },
   });
 
-  // Generic credential error to prevent email enumeration
   if (!user) {
     throw new ApiError(
       StatusCodes.UNAUTHORIZED,
@@ -36,7 +41,6 @@ const loginUser = async (payload: ILoginUser): Promise<ILoginResponse> => {
     );
   }
 
-  // Deactivated user check
   if (!user.isActive) {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -56,7 +60,6 @@ const loginUser = async (payload: ILoginUser): Promise<ILoginResponse> => {
     );
   }
 
-  // Update last login timestamp
   const updatedUser = await prisma.user.update({
     where: { id: user.id },
     data: { lastLoginAt: new Date() },
@@ -82,53 +85,123 @@ const loginUser = async (payload: ILoginUser): Promise<ILoginResponse> => {
 };
 
 const registerUser = async (
-  payload: IRegisterUser,
+  _payload: IRegisterUser,
 ): Promise<ILoginResponse> => {
-  const normalizedEmail = payload.email.trim().toLowerCase();
+  throw new ApiError(
+    StatusCodes.FORBIDDEN,
+    "Public registration is disabled. Staff accounts must be created by an administrator.",
+  );
+};
 
-  const existingUser = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
+const verifySetupToken = async (
+  token: string,
+): Promise<IVerifySetupTokenResponse> => {
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(token.trim())
+    .digest("hex");
+
+  const user = await prisma.user.findFirst({
+    where: { setupTokenHash: tokenHash },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      isActive: true,
+      setupTokenExpiresAt: true,
+    },
   });
 
-  if (existingUser) {
+  if (!user) {
     throw new ApiError(
-      StatusCodes.CONFLICT,
-      "User with this email already exists",
+      StatusCodes.BAD_REQUEST,
+      "Invalid or already used setup link.",
+    );
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(
+      StatusCodes.FORBIDDEN,
+      "This account has been deactivated. Please contact an administrator.",
+    );
+  }
+
+  if (user.setupTokenExpiresAt && new Date() > user.setupTokenExpiresAt) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "This setup link has expired. Please contact an administrator to request a new setup link.",
+    );
+  }
+
+  return {
+    valid: true,
+    email: user.email,
+    name: user.name,
+  };
+};
+
+const setPassword = async (
+  payload: ISetPasswordPayload,
+): Promise<ILoginResponse> => {
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(payload.token.trim())
+    .digest("hex");
+
+  const user = await prisma.user.findFirst({
+    where: { setupTokenHash: tokenHash },
+  });
+
+  if (!user) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "Invalid or already used setup link.",
+    );
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(
+      StatusCodes.FORBIDDEN,
+      "This account has been deactivated. Please contact an administrator.",
+    );
+  }
+
+  if (user.setupTokenExpiresAt && new Date() > user.setupTokenExpiresAt) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "This setup link has expired. Please contact an administrator to request a new setup link.",
     );
   }
 
   const saltRounds = Number(env.bcrypt_salt_round) || 12;
-  const passwordHash = await bcrypt.hash(payload.password, saltRounds);
+  const newPasswordHash = await bcrypt.hash(payload.password, saltRounds);
 
-  const newUser = await prisma.user.create({
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
     data: {
-      name: payload.name.trim(),
-      email: normalizedEmail,
-      passwordHash,
-      role: Role.STAFF,
-      phone: payload.phone?.trim() ? payload.phone.trim() : null,
-      avatar: payload.avatar ? payload.avatar : null,
-      isActive: true,
+      passwordHash: newPasswordHash,
+      setupTokenHash: null,
+      setupTokenExpiresAt: null,
       lastLoginAt: new Date(),
     },
     select: userSafeSelect,
   });
 
   const jwtPayload = {
-    id: newUser.id,
-    email: newUser.email,
-    role: newUser.role,
+    id: updatedUser.id,
+    email: updatedUser.email,
+    role: updatedUser.role,
   };
 
-  const token = jwtHelper.createToken(
+  const jwtToken = jwtHelper.createToken(
     jwtPayload,
     env.jwt.jwt_secret as Secret,
     (env.jwt.jwt_expire_in || "1d") as any,
   );
 
   return {
-    token,
-    user: newUser,
+    token: jwtToken,
+    user: updatedUser,
   };
 };
 
@@ -155,8 +228,9 @@ const getMe = async (userId: string) => {
 export const AuthService = {
   loginUser,
   registerUser,
+  verifySetupToken,
+  setPassword,
   getMe,
 };
 
 export default AuthService;
-
