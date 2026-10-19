@@ -4,10 +4,13 @@ import prisma from "../../config/prisma.js";
 import ApiError from "../../utils/ApiError.js";
 import { hashToken } from "../../utils/tokenHash.js";
 
-const isTokenBlacklisted = async (token: string): Promise<boolean> => {
+const isTokenBlacklisted = async (
+  token: string,
+  client: typeof prisma = prisma,
+): Promise<boolean> => {
   try {
     const tokenHash = hashToken(token);
-    const blacklisted = await prisma.blacklistedToken.findUnique({
+    const blacklisted = await client.blacklistedToken.findUnique({
       where: { tokenHash },
       select: { id: true },
     });
