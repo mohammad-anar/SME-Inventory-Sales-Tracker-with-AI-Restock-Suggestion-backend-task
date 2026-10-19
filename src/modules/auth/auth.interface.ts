@@ -31,3 +31,14 @@ export type IRegisterUser = {
   avatar?: string | null;
 };
 
+export type ISetPasswordPayload = {
+  token: string;
+  password: string;
+};
+
+export type IVerifySetupTokenResponse = {
+  valid: boolean;
+  email: string;
+  name: string;
+};
+
