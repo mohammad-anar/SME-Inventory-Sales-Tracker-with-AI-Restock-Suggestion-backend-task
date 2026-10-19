@@ -19,9 +19,20 @@ const registerZodSchema = z.object({
   avatar: z.string().url("Avatar must be a valid URL").optional().nullable(),
 });
 
+const setPasswordZodSchema = z.object({
+  token: z.string().trim().min(1, "Setup token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
+
+const verifySetupTokenZodSchema = z.object({
+  token: z.string().trim().min(1, "Setup token is required"),
+});
+
 export const AuthValidation = {
   loginZodSchema,
   registerZodSchema,
+  setPasswordZodSchema,
+  verifySetupTokenZodSchema,
 };
 
 export default AuthValidation;
