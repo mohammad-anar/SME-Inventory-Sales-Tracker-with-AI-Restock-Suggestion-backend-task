@@ -16,11 +16,27 @@ model User {
     sales           Sale[]          @relation("StaffSales")
     purchaseOrders  PurchaseOrder[] @relation("UserPurchaseOrders")
     stockMovements  StockMovement[] @relation("UserStockMovements")
+    blacklistedTokens BlacklistedToken[] @relation("UserBlacklistedTokens")
 
     @@map("users")
     @@index([email])
     @@index([role])
     @@index([setupTokenHash])
+}
+
+model BlacklistedToken {
+    id          String    @id @default(cuid())
+    tokenHash   String    @unique
+    userId      String?
+    user        User?     @relation("UserBlacklistedTokens", fields: [userId], references: [id], onDelete: Cascade)
+    expiresAt   DateTime
+    revokedAt   DateTime  @default(now())
+    createdAt   DateTime  @default(now())
+
+    @@map("blacklisted_tokens")
+    @@index([tokenHash])
+    @@index([expiresAt])
+    @@index([userId])
 }
 
 model Category {
